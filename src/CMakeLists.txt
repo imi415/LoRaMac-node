@@ -23,7 +23,7 @@ cmake_minimum_required(VERSION 3.6)
 #---------------------------------------------------------------------------------------
 
 # Allow switching of target platform
-set(BOARD_LIST NAMote72 NucleoL073 NucleoL152 NucleoL476 SAML21 SKiM880B SKiM980A SKiM881AXL B-L072Z-LRWAN1)
+set(BOARD_LIST NAMote72 NucleoL073 NucleoL152 NucleoL476 SAML21 SKiM880B HELTEC_L151 SKiM980A SKiM881AXL B-L072Z-LRWAN1)
 set(BOARD NucleoL073 CACHE STRING "Default target platform is NucleoL073")
 set_property(CACHE BOARD PROPERTY STRINGS ${BOARD_LIST})
 
@@ -142,6 +142,17 @@ elseif(BOARD STREQUAL SKiM880B)
 
     # Configure radio
     set(RADIO sx1272 CACHE INTERNAL "Radio sx1272 selected")
+
+elseif(BOARD STREQUAL HELTEC_L151)
+    # Configure toolchain for HELTEC_L151
+    set(LINKER_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/boards/HELTEC_L151/cmsis/arm-gcc/stm32l151xb_flash.ld)
+    include(stm32l1)
+
+    # Build platform specific board implementation
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/boards/HELTEC_L151)
+
+    # Configure radio
+    set(RADIO sx1276 CACHE INTERNAL "Radio sx1276 selected")
 
 elseif(BOARD STREQUAL SKiM980A)
     # Configure toolchain for SKiM881AXL
