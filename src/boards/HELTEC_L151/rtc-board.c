@@ -35,7 +35,7 @@
 #include "rtc-board.h"
 
 // MCU Wake Up Time
-#define MIN_ALARM_DELAY                             3000 // in ticks
+#define MIN_ALARM_DELAY                             2000 // in ticks
 
 // sub-second number of bits
 #define N_PREDIV_S                                  10
@@ -47,7 +47,7 @@
 #define PREDIV_A                                    ( 1 << ( 15 - N_PREDIV_S ) ) - 1
 
 // Sub-second mask definition
-#define ALARM_SUBSECOND_MASK                        ( N_PREDIV_S << RTC_ALRMASSR_MASKSS_Pos )
+// #define ALARM_SUBSECOND_MASK                        ( N_PREDIV_S << RTC_ALRMASSR_MASKSS_Pos )
 
 // RTC Time base in us
 #define USEC_NUMBER                                 1000000
