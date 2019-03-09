@@ -172,6 +172,25 @@ elseif(BOARD STREQUAL B-L072Z-LRWAN1)
 
     # Configure radio
     set(RADIO sx1276 CACHE INTERNAL "Radio sx1276 selected")
+
+elseif(BOARD STREQUAL F407VE_Generic)
+    # Configure toolchain for F407VE_Generic
+    set(LINKER_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/boards/F407VE_Generic/cmsis/arm-gcc/stm32f407vetx_flash.ld)
+    include(stm32f4)
+
+    # Build platform specific board implementation
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/boards/F407VE_Generic)
+
+    # Configure radio
+    if(MBED_RADIO_SHIELD STREQUAL SX1272MB2DAS)
+        set(RADIO sx1272 CACHE INTERNAL "Radio sx1272 selected")
+    elseif(MBED_RADIO_SHIELD STREQUAL SX1276MB1LAS OR MBED_RADIO_SHIELD STREQUAL SX1276MB1MAS OR MBED_RADIO_SHIELD STREQUAL SX1276UNDEFINED)
+        set(RADIO sx1276 CACHE INTERNAL "Radio sx1276 selected")
+    elseif(MBED_RADIO_SHIELD STREQUAL SX1261MBXBAS OR MBED_RADIO_SHIELD STREQUAL SX1262MBXCAS OR MBED_RADIO_SHIELD STREQUAL SX1262MBXDAS)
+        set(RADIO sx126x CACHE INTERNAL "Radio sx126x selected")
+    else()
+        message(STATUS "Please specify the MBED_RADIO_SHIELD!\nPossible values are: SX1272MB2DAS, SX1276MB1LAS, SX1276MB1MAS, SX1276UNDEFINED, SX1261MBXBAS, SX1262MBXCAS and SX1262MBXDAS.")
+    endif()
 endif()
 
 #---------------------------------------------------------------------------------------
