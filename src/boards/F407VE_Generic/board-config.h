@@ -45,11 +45,11 @@
 /*!
  * Board MCU pins definitions
  */
-#define RADIO_RESET                                 PA_0
+#define RADIO_RESET                                 PB_6
 
-#define RADIO_MOSI                                  PA_7
-#define RADIO_MISO                                  PA_6
-#define RADIO_SCLK                                  PA_5
+#define RADIO_MOSI                                  PB_5
+#define RADIO_MISO                                  PB_4
+#define RADIO_SCLK                                  PB_3
 
 #if defined( SX1261MBXBAS ) || defined( SX1262MBXCAS ) || defined( SX1262MBXDAS )
 
@@ -71,23 +71,23 @@
 
 #elif defined( SX1272MB2DAS) || defined( SX1276MB1LAS ) || defined( SX1276MB1MAS ) || defined ( SX1276UNDEFINED )
 
-#define RADIO_NSS                                   PB_6
+#define RADIO_NSS                                   PB_7
 
-#define RADIO_DIO_0                                 PA_10
-#define RADIO_DIO_1                                 PB_3
-#define RADIO_DIO_2                                 PB_5
-#define RADIO_DIO_3                                 PB_4
-#define RADIO_DIO_4                                 PA_9
-#define RADIO_DIO_5                                 PC_7
+#define RADIO_DIO_0                                 PA_0
+#define RADIO_DIO_1                                 PA_1
+#define RADIO_DIO_2                                 PA_2
+#define RADIO_DIO_3                                 PA_3
+#define RADIO_DIO_4                                 PA_4
+#define RADIO_DIO_5                                 PA_5
 
-#define RADIO_ANT_SWITCH                            PC_1
+#define RADIO_ANT_SWITCH                            NC
 
-#define LED_1                                       NC
-#define LED_2                                       NC
+#define LED_1                                       PA_6
+#define LED_2                                       PA_7
 
 // Debug pins definition.
-#define RADIO_DBG_PIN_TX                            PB_0
-#define RADIO_DBG_PIN_RX                            PA_4
+#define RADIO_DBG_PIN_TX                            NC
+#define RADIO_DBG_PIN_RX                            NC
 
 #endif
 
@@ -103,7 +103,7 @@
 #define I2C_SCL                                     PB_8
 #define I2C_SDA                                     PB_9
 
-#define UART_TX                                     PA_2
-#define UART_RX                                     PA_3
+#define UART_TX                                     PA_9
+#define UART_RX                                     PA_10
 
 #endif // __BOARD_CONFIG_H__
