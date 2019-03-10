@@ -82,7 +82,7 @@
  */
 #define LORAWAN_ADR_ON                              1
 
-#if defined( REGION_EU868 )
+#if defined( REGION_EU868 ) || defined( REGION_RU864 ) || defined( REGION_CN779 ) || defined( REGION_EU433 )
 
 #include "LoRaMacTest.h"
 
@@ -102,7 +102,11 @@
 
 static uint8_t DevEui[] = LORAWAN_DEVICE_EUI;
 static uint8_t JoinEui[] = LORAWAN_JOIN_EUI;
+#if( ABP_ACTIVATION_LRWAN_VERSION == ABP_ACTIVATION_LRWAN_VERSION_V10x )
+static uint8_t GenAppKey[] = LORAWAN_GEN_APP_KEY;
+#else
 static uint8_t AppKey[] = LORAWAN_APP_KEY;
+#endif
 static uint8_t NwkKey[] = LORAWAN_NWK_KEY;
 
 #if( OVER_THE_AIR_ACTIVATION == 0 )
@@ -284,6 +288,7 @@ const char* MacStatusStrings[] =
     "MAC command error",             // LORAMAC_STATUS_MAC_COMMAD_ERROR
     "ClassB error",                  // LORAMAC_STATUS_CLASS_B_ERROR
     "Confirm queue error",           // LORAMAC_STATUS_CONFIRM_QUEUE_ERROR
+    "Multicast group undefined",     // LORAMAC_STATUS_MC_GROUP_UNDEFINED
     "Unknown error",                 // LORAMAC_STATUS_ERROR
 };
 
@@ -743,7 +748,7 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
                     mibReq.Param.AdrEnable = true;
                     LoRaMacMibSetRequestConfirm( &mibReq );
 
-#if defined( REGION_EU868 )
+#if defined( REGION_EU868 ) || defined( REGION_RU864 ) || defined( REGION_CN779 ) || defined( REGION_EU433 )
                     LoRaMacTestSetDutyCycleOn( false );
 #endif
                 }
@@ -764,7 +769,7 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
                     mibReq.Type = MIB_ADR;
                     mibReq.Param.AdrEnable = LORAWAN_ADR_ON;
                     LoRaMacMibSetRequestConfirm( &mibReq );
-#if defined( REGION_EU868 )
+#if defined( REGION_EU868 ) || defined( REGION_RU864 ) || defined( REGION_CN779 ) || defined( REGION_EU433 )
                     LoRaMacTestSetDutyCycleOn( LORAWAN_DUTYCYCLE_ON );
 #endif
                     break;
@@ -810,7 +815,7 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
                         mibReq.Type = MIB_ADR;
                         mibReq.Param.AdrEnable = LORAWAN_ADR_ON;
                         LoRaMacMibSetRequestConfirm( &mibReq );
-#if defined( REGION_EU868 )
+#if defined( REGION_EU868 ) || defined( REGION_RU864 ) || defined( REGION_CN779 ) || defined( REGION_EU433 )
                         LoRaMacTestSetDutyCycleOn( LORAWAN_DUTYCYCLE_ON );
 #endif
 
@@ -903,7 +908,7 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
     GpioWrite( &Led2, 1 );
     TimerStart( &Led2Timer );
 
-    const char *slotStrings[] = { "1", "2", "C", "Ping-Slot", "Multicast Ping-Slot" };
+    const char *slotStrings[] = { "1", "2", "C", "C Multicast", "B Ping-Slot", "B Multicast Ping-Slot" };
 
     printf( "\r\n###### ===== DOWNLINK FRAME %lu ==== ######\r\n", mcpsIndication->DownLinkCounter );
 
@@ -1174,9 +1179,22 @@ int main( void )
                 }
                 else
                 {
+#if( OVER_THE_AIR_ACTIVATION == 0 )
+                    // Tell the MAC layer which network server version are we connecting too.
+                    mibReq.Type = MIB_ABP_LORAWAN_VERSION;
+                    mibReq.Param.AbpLrWanVersion.Value = ABP_ACTIVATION_LRWAN_VERSION;
+                    LoRaMacMibSetRequestConfirm( &mibReq );
+#endif
+
+#if( ABP_ACTIVATION_LRWAN_VERSION == ABP_ACTIVATION_LRWAN_VERSION_V10x )
+                    mibReq.Type = MIB_GEN_APP_KEY;
+                    mibReq.Param.GenAppKey = GenAppKey;
+                    LoRaMacMibSetRequestConfirm( &mibReq );
+#else
                     mibReq.Type = MIB_APP_KEY;
                     mibReq.Param.AppKey = AppKey;
                     LoRaMacMibSetRequestConfirm( &mibReq );
+#endif
 
                     mibReq.Type = MIB_NWK_KEY;
                     mibReq.Param.NwkKey = NwkKey;
@@ -1252,7 +1270,7 @@ int main( void )
                 mibReq.Param.AdrEnable = LORAWAN_ADR_ON;
                 LoRaMacMibSetRequestConfirm( &mibReq );
 
-#if defined( REGION_EU868 )
+#if defined( REGION_EU868 ) || defined( REGION_RU864 ) || defined( REGION_CN779 ) || defined( REGION_EU433 )
                 LoRaMacTestSetDutyCycleOn( LORAWAN_DUTYCYCLE_ON );
 #endif
                 mibReq.Type = MIB_SYSTEM_MAX_RX_ERROR;
@@ -1314,11 +1332,6 @@ int main( void )
                     printf( " %02X", AppSKey[i] );
                 }
                 printf( "\n\r\n" );
-
-                // Tell the MAC layer which network server version are we connecting too.
-                mibReq.Type = MIB_ABP_LORAWAN_VERSION;
-                mibReq.Param.AbpLrWanVersion.Value = ABP_ACTIVATION_LRWAN_VERSION;
-                LoRaMacMibSetRequestConfirm( &mibReq );
 
                 mibReq.Type = MIB_NETWORK_ACTIVATION;
                 mibReq.Param.NetworkActivation = ACTIVATION_TYPE_ABP;

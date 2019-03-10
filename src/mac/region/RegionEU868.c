@@ -409,6 +409,11 @@ void RegionEU868InitDefaults( InitDefaultsParams_t* params )
         {
             // Restore channels default mask
             NvmCtx.ChannelsMask[0] |= NvmCtx.ChannelsDefaultMask[0];
+
+            // Channels
+            NvmCtx.Channels[0] = ( ChannelParams_t ) EU868_LC1;
+            NvmCtx.Channels[1] = ( ChannelParams_t ) EU868_LC2;
+            NvmCtx.Channels[2] = ( ChannelParams_t ) EU868_LC3;
             break;
         }
         default:
@@ -428,6 +433,11 @@ bool RegionEU868Verify( VerifyParams_t* verify, PhyAttribute_t phyAttribute )
 {
     switch( phyAttribute )
     {
+        case PHY_FREQUENCY:
+        {
+            uint8_t band = 0;
+            return VerifyRfFreq( verify->Frequency, &band );
+        }
         case PHY_TX_DR:
         {
             return RegionCommonValueInRange( verify->DatarateParams.Datarate, EU868_TX_MIN_DATARATE, EU868_TX_MAX_DATARATE );

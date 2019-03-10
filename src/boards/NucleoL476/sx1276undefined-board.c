@@ -240,7 +240,6 @@ void SX1276SetRfTxPower( int8_t power )
 
 static uint8_t SX1276GetPaSelect( uint32_t channel )
 {
-
     // They have antenna connected to PABOOST.
     return RF_PACONFIG_PASELECT_PABOOST;
 }

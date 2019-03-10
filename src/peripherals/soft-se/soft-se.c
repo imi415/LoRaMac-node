@@ -29,7 +29,7 @@ Maintainer: Miguel Luis ( Semtech ), Gregory Cristian ( Semtech ),
 #include "cmac.h"
 #include "radio.h"
 
-#define NUM_OF_KEYS      22
+#define NUM_OF_KEYS      24
 #define KEY_SIZE         16
 
 /*!
@@ -71,7 +71,7 @@ typedef struct sSecureElementNvCtx
  */
 static SecureElementNvCtx_t SeNvmCtx;
 
-static EventNvmCtxChanged SeNvmCtxChanged;
+static SecureElementNvmEvent SeNvmCtxChanged;
 
 /*
  * Local functions
@@ -100,17 +100,28 @@ SecureElementStatus_t GetKeyByID( KeyIdentifier_t keyID, Key_t** keyItem )
 }
 
 /*
- * Computes a CMAC
+ * Dummy callback in case if the user provides NULL function pointer
+ */
+static void DummyCB( void )
+{
+    return;
+}
+
+/*
+ * Computes a CMAC of a message using provided initial Bx block
  *
+ *  cmac = aes128_cmac(keyID, blocks[i].Buffer)
+ *
+ * \param[IN]  micBxBuffer    - Buffer containing the initial Bx block
  * \param[IN]  buffer         - Data buffer
  * \param[IN]  size           - Data buffer size
  * \param[IN]  keyID          - Key identifier to determine the AES key to be used
  * \param[OUT] cmac           - Computed cmac
  * \retval                    - Status of the operation
  */
-SecureElementStatus_t ComputeCmac( uint8_t* buffer, uint16_t size, KeyIdentifier_t keyID, uint32_t* cmac )
+static SecureElementStatus_t ComputeCmac( uint8_t *micBxBuffer, uint8_t *buffer, uint16_t size, KeyIdentifier_t keyID, uint32_t* cmac )
 {
-    if( buffer == NULL || cmac == NULL )
+    if( ( buffer == NULL ) || ( cmac == NULL ) )
     {
         return SECURE_ELEMENT_ERROR_NPE;
     }
@@ -126,6 +137,11 @@ SecureElementStatus_t ComputeCmac( uint8_t* buffer, uint16_t size, KeyIdentifier
     {
         AES_CMAC_SetKey( SeNvmCtx.AesCmacCtx, keyItem->KeyValue );
 
+        if( micBxBuffer != NULL )
+        {
+            AES_CMAC_Update( SeNvmCtx.AesCmacCtx, micBxBuffer, 16 );
+        }
+
         AES_CMAC_Update( SeNvmCtx.AesCmacCtx, buffer, size );
 
         AES_CMAC_Final( Cmac, SeNvmCtx.AesCmacCtx );
@@ -138,22 +154,15 @@ SecureElementStatus_t ComputeCmac( uint8_t* buffer, uint16_t size, KeyIdentifier
 }
 
 /*
- * Dummy callback in case if the user provides NULL function pointer
- */
-static void DummyCB( void )
-{
-    return;
-}
-
-/*
  * API functions
  */
 
-SecureElementStatus_t SecureElementInit( EventNvmCtxChanged seNvmCtxChanged )
+SecureElementStatus_t SecureElementInit( SecureElementNvmEvent seNvmCtxChanged )
 {
     // Initialize with defaults
     uint8_t itr = 0;
     SeNvmCtx.KeyList[itr++].KeyID = APP_KEY;
+    SeNvmCtx.KeyList[itr++].KeyID = GEN_APP_KEY;
     SeNvmCtx.KeyList[itr++].KeyID = NWK_KEY;
     SeNvmCtx.KeyList[itr++].KeyID = J_S_INT_KEY;
     SeNvmCtx.KeyList[itr++].KeyID = J_S_ENC_KEY;
@@ -161,6 +170,7 @@ SecureElementStatus_t SecureElementInit( EventNvmCtxChanged seNvmCtxChanged )
     SeNvmCtx.KeyList[itr++].KeyID = S_NWK_S_INT_KEY;
     SeNvmCtx.KeyList[itr++].KeyID = NWK_S_ENC_KEY;
     SeNvmCtx.KeyList[itr++].KeyID = APP_S_KEY;
+    SeNvmCtx.KeyList[itr++].KeyID = MC_ROOT_KEY;
     SeNvmCtx.KeyList[itr++].KeyID = MC_KE_KEY;
     SeNvmCtx.KeyList[itr++].KeyID = MC_KEY_0;
     SeNvmCtx.KeyList[itr++].KeyID = MC_APP_S_KEY_0;
@@ -215,22 +225,22 @@ SecureElementStatus_t SecureElementSetKey( KeyIdentifier_t keyID, uint8_t* key )
     {
         return SECURE_ELEMENT_ERROR_NPE;
     }
-    SecureElementStatus_t retval = SECURE_ELEMENT_ERROR;
 
     for( uint8_t i = 0; i < NUM_OF_KEYS; i++ )
     {
         if( SeNvmCtx.KeyList[i].KeyID == keyID )
         {
-            if( LORAMAC_CRYPTO_MULITCAST_KEYS < SeNvmCtx.KeyList[i].KeyID )
-            {  // Decrypt the key if its a Mulitcast key
-
+            if( ( keyID == MC_KEY_0 ) || ( keyID == MC_KEY_1 ) || ( keyID == MC_KEY_2 ) || ( keyID == MC_KEY_3 ) )
+            {  // Decrypt the key if its a Mckey
+                SecureElementStatus_t retval = SECURE_ELEMENT_ERROR;
                 uint8_t decryptedKey[16] = { 0 };
 
                 retval = SecureElementAesEncrypt( key, 16, MC_KE_KEY, decryptedKey );
-                if( retval != SECURE_ELEMENT_SUCCESS )
-                {
-                    return retval;
-                }
+
+                memcpy1( SeNvmCtx.KeyList[i].KeyValue, decryptedKey, KEY_SIZE );
+                SeNvmCtxChanged( );
+
+                return retval;
             }
             else
             {
@@ -244,15 +254,15 @@ SecureElementStatus_t SecureElementSetKey( KeyIdentifier_t keyID, uint8_t* key )
     return SECURE_ELEMENT_ERROR_INVALID_KEY_ID;
 }
 
-SecureElementStatus_t SecureElementComputeAesCmac( uint8_t* buffer, uint16_t size, KeyIdentifier_t keyID, uint32_t* cmac )
+SecureElementStatus_t SecureElementComputeAesCmac( uint8_t *micBxBuffer, uint8_t *buffer, uint16_t size, KeyIdentifier_t keyID, uint32_t* cmac )
 {
-    if( keyID >= LORAMAC_CRYPTO_MULITCAST_KEYS )
+    if( keyID >= LORAMAC_CRYPTO_MULTICAST_KEYS )
     {
         //Never accept multicast key identifier for cmac computation
         return SECURE_ELEMENT_ERROR_INVALID_KEY_ID;
     }
 
-    return ComputeCmac( buffer, size, keyID, cmac );
+    return ComputeCmac( micBxBuffer, buffer, size, keyID, cmac );
 }
 
 SecureElementStatus_t SecureElementVerifyAesCmac( uint8_t* buffer, uint16_t size, uint32_t expectedCmac, KeyIdentifier_t keyID )
@@ -264,8 +274,7 @@ SecureElementStatus_t SecureElementVerifyAesCmac( uint8_t* buffer, uint16_t size
 
     SecureElementStatus_t retval = SECURE_ELEMENT_ERROR;
     uint32_t compCmac = 0;
-
-    retval = ComputeCmac( buffer, size, keyID, &compCmac );
+    retval = ComputeCmac( NULL, buffer, size, keyID, &compCmac );
     if( retval != SECURE_ELEMENT_SUCCESS )
     {
         return retval;
@@ -330,15 +339,6 @@ SecureElementStatus_t SecureElementDeriveAndStoreKey( Version_t version, uint8_t
         {
             return SECURE_ELEMENT_ERROR_INVALID_KEY_ID;
         }
-    }
-
-    // In case of McKEKey derivation, the parameter input is concatenated: nonce | DevEUI  | pad16
-    // where nonce SHALL be greater than 15
-    uint16_t nonce = input[0];
-    nonce |= ( ( uint16_t ) input[1] << 8 );
-    if( ( targetKeyID == MC_KE_KEY ) && ( nonce < 16 ) )
-    {
-        return retval;
     }
 
     // Derive key

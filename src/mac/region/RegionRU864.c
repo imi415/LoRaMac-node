@@ -375,6 +375,10 @@ void RegionRU864InitDefaults( InitDefaultsParams_t* params )
         {
             // Restore channels default mask
             NvmCtx.ChannelsMask[0] |= NvmCtx.ChannelsDefaultMask[0];
+
+            // Channels
+            NvmCtx.Channels[0] = ( ChannelParams_t ) RU864_LC1;
+            NvmCtx.Channels[1] = ( ChannelParams_t ) RU864_LC2;
             break;
         }
         default:
@@ -394,6 +398,10 @@ bool RegionRU864Verify( VerifyParams_t* verify, PhyAttribute_t phyAttribute )
 {
     switch( phyAttribute )
     {
+        case PHY_FREQUENCY:
+        {
+            return VerifyRfFreq( verify->Frequency );
+        }
         case PHY_TX_DR:
         {
             return RegionCommonValueInRange( verify->DatarateParams.Datarate, RU864_TX_MIN_DATARATE, RU864_TX_MAX_DATARATE );
