@@ -35,7 +35,7 @@
 #include "rtc-board.h"
 
 // MCU Wake Up Time
-#define MIN_ALARM_DELAY                             2000 // in ticks
+#define MIN_ALARM_DELAY                             3 // in ticks
 
 // sub-second number of bits
 #define N_PREDIV_S                                  10
